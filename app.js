@@ -3,12 +3,13 @@ const path = require('path');
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 // const expressHbs = require('express-handlebars');
 const dotenv = require('dotenv');
 dotenv.config();
 
 const errorController = require('./controllers/error');
-const mongoConnect = require('./util/database').mongoConnect;
+// const mongoConnect = require('./util/database').mongoConnect;
 const User = require('./models/user');
 // const db = require('./util/database');
 // const sequelize = require('./util/database');
@@ -52,9 +53,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use((req, res, next) => {
   // User.findByPk(1)
-  User.findById('609fc9959cc51d686d40537e')
+  User.findById('60a090962b4bb1424cba6fea')
     .then((user) => {
-      req.user = new User(user.name, user.email, user.cart, user._id);
+      // req.user = new User(user.name, user.email, user.cart, user._id);
+      req.user = user;
       next();
     })
     .catch((err) => console.log(err));
@@ -67,9 +69,32 @@ app.use(shopRoutes);
 
 app.use(errorController.get404);
 
-mongoConnect(() => {
-  app.listen(3000);
-});
+mongoose
+  .connect(
+    `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.yg0pj.mongodb.net/shop?retryWrites=true&w=majority`
+  )
+  .then((result) => {
+    User.findOne().then((user) => {
+      if (!user) {
+        const user = new User({
+          name: 'Nuk',
+          email: 'nuk@test.com',
+          cart: {
+            items: []
+          }
+        });
+        user.save();
+      }
+    });
+    app.listen(3000);
+  })
+  .catch((err) => {
+    console.log(err);
+  });
+
+// mongoConnect(() => {
+//   app.listen(3000);
+// });
 
 // mongoConnect((client) => {
 //   console.log(client);
